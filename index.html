@@ -322,7 +322,7 @@ function esc(s){
 }
 function num(v){ if(v==null||v==='') return null; var n = parseFloat(v); return isNaN(n)?null:n; }
 function int0(v){ var n = parseInt(v,10); return isNaN(n)||n<0?0:n; }
-function fmt(v){ var n = num(v); return n==null?'未填':String(n); }
+function fmt(v){ var n = num(v); return n==null?'未填':String(n)+'米'; }
 function toast(msg){
   var t = $('toast'); t.textContent = msg; t.style.display = 'block';
   clearTimeout(t._h); t._h = setTimeout(function(){ t.style.display='none'; }, 2200);
@@ -735,14 +735,14 @@ function buildPlanSVG(p){
     + '<polygon points="'+fmtN(ncx)+','+fmtN(ncy-12)+' '+fmtN(ncx+5)+','+fmtN(ncy+6)+' '+fmtN(ncx)+','+fmtN(ncy+2)+' '+fmtN(ncx-5)+','+fmtN(ncy+6)+'" fill="#1e3a5f"/>'
     + '<text x="'+fmtN(ncx)+'" y="'+fmtN(ncy+30)+'" font-size="12" font-weight="bold" fill="#1e3a5f" text-anchor="middle">北</text></g>';
   /* 尺寸标注 */
-  s += '<text x="'+fmtN(siteX-14)+'" y="'+fmtN(siteY+siteH/2)+'" font-size="12" fill="#1e3a5f" transform="rotate(-90 '+fmtN(siteX-14)+' '+fmtN(siteY+siteH/2)+')" text-anchor="middle">南北总长 '+fmt(p.ns)+'米</text>';
-  s += '<text x="'+fmtN(siteX)+'" y="'+fmtN(siteY-8)+'" font-size="11" fill="#475569">北过墙高 '+fmt(p.nwall)+'米 · 北高 '+fmt(p.nhigh)+'米</text>';
-  s += '<text x="'+fmtN(siteX+siteW+14)+'" y="'+fmtN(siteY+siteH/2)+'" font-size="11" fill="#475569" transform="rotate(-90 '+fmtN(siteX+siteW+14)+' '+fmtN(siteY+siteH/2)+')" text-anchor="middle">过道 '+fmt(p.pass)+'米</text>';
+  s += '<text x="'+fmtN(siteX-14)+'" y="'+fmtN(siteY+siteH/2)+'" font-size="12" fill="#1e3a5f" transform="rotate(-90 '+fmtN(siteX-14)+' '+fmtN(siteY+siteH/2)+')" text-anchor="middle">南北总长 '+fmt(p.ns)+'</text>';
+  s += '<text x="'+fmtN(siteX)+'" y="'+fmtN(siteY-8)+'" font-size="11" fill="#475569">北过墙高 '+fmt(p.nwall)+' · 北高 '+fmt(p.nhigh)+'</text>';
+  s += '<text x="'+fmtN(siteX+siteW+14)+'" y="'+fmtN(siteY+siteH/2)+'" font-size="11" fill="#475569" transform="rotate(-90 '+fmtN(siteX+siteW+14)+' '+fmtN(siteY+siteH/2)+')" text-anchor="middle">过道 '+fmt(p.pass)+'</text>';
   var legacy = [];
-  if(hasVal(p.me1)||hasVal(p.me2)) legacy.push('主房东墙 '+fmt(p.me1)+'米 / '+fmt(p.me2)+'米');
-  if(hasVal(p.mn)) legacy.push('主房北端 '+fmt(p.mn)+'米');
-  if(hasVal(p.ms)) legacy.push('主房南端距南房 '+fmt(p.ms)+'米');
-  if(hasVal(p.sne)||hasVal(p.sw1)||hasVal(p.sw2)||hasVal(p.se)) legacy.push('南房：东北角 '+fmt(p.sne)+'米 · 西墙 '+fmt(p.sw1)+'米 / '+fmt(p.sw2)+'米 · 东侧 '+fmt(p.se)+'米');
+  if(hasVal(p.me1)||hasVal(p.me2)) legacy.push('主房东墙 '+fmt(p.me1)+' / '+fmt(p.me2)+'');
+  if(hasVal(p.mn)) legacy.push('主房北端 '+fmt(p.mn)+'');
+  if(hasVal(p.ms)) legacy.push('主房南端距南房 '+fmt(p.ms)+'');
+  if(hasVal(p.sne)||hasVal(p.sw1)||hasVal(p.sw2)||hasVal(p.se)) legacy.push('南房：东北角 '+fmt(p.sne)+' · 西墙 '+fmt(p.sw1)+' / '+fmt(p.sw2)+' · 东侧 '+fmt(p.se)+'');
   if(legacy.length){
     s += '<text x="40" y="'+fmtN(siteY+siteH+18)+'" font-size="11" fill="#475569">'+esc(trunc(legacy.join('　'), 46))+'</text>';
   }
@@ -781,11 +781,11 @@ function buildPlanSVG(p){
   compLines.push(['装机容量：', c.kw.toFixed(2)+' kW']);
   s += box('组件布置', compLines);
   s += box('尺寸汇总', [
-    ['南北总长：', fmt(p.ns)+'米'],
-    ['东西总长：', fmt(p.ew)+'米'],
-    ['北过墙高：', fmt(p.nwall)+'米'],
-    ['东过道：', fmt(p.pass)+'米'],
-    ['东土墙：', '高'+fmt(p.ewallh)+'米 / 厚'+fmt(p.ewallt)+'米']
+    ['南北总长：', fmt(p.ns)+''],
+    ['东西总长：', fmt(p.ew)+''],
+    ['北过墙高：', fmt(p.nwall)+''],
+    ['东过道：', fmt(p.pass)+''],
+    ['东土墙：', '高'+fmt(p.ewallh)+' / 厚'+fmt(p.ewallt)+'']
   ]);
   var notes = [];
   if(p.note1) notes.push(['✓ ', '热水器、烟囱可移动']);
