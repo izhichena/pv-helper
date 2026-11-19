@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e3a5f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="光伏助手">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<title>光伏草勘备案助手</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#1e3a5f;--blue2:#2563eb;--light:#e8eef5;--line:#d7dee8;--txt:#222;--mut:#667085;--bg:#f4f6f9;--amber:#b45309;--green:#15803d}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.5}
+header{background:var(--blue);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:10}
+header h1{font-size:18px}
+header p{font-size:12px;opacity:.8;margin-top:2px}
+.wrap{max-width:720px;margin:0 auto;padding:12px 12px 90px}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card h2{font-size:16px;color:var(--blue);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.card h3{font-size:14px;color:var(--blue);margin:12px 0 8px}
+label{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
+input,select,textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:#fff;color:var(--txt);outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--blue2)}
+textarea{resize:vertical;min-height:64px}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.field{margin-bottom:10px}
+.req{color:#dc2626}
+.btn{display:inline-block;border:none;border-radius:9px;padding:11px 16px;font-size:15px;cursor:pointer;text-align:center}
+.btn-primary{background:var(--blue2);color:#fff}
+.btn-dark{background:var(--blue);color:#fff}
+.btn-ghost{background:#fff;color:var(--blue);border:1px solid var(--line)}
+.btn-danger{background:#fff;color:#dc2626;border:1px solid #fecaca}
+.btn-block{width:100%}
+.btn-row{display:flex;gap:10px;margin-top:10px}
+.btn-row .btn{flex:1}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px}
+.chip{flex:0 0 auto;padding:6px 13px;border-radius:20px;border:1px solid var(--line);background:#fff;font-size:13px;cursor:pointer;color:var(--mut)}
+.chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.proj{cursor:pointer}
+.proj:active{background:#f8fafc}
+.proj-top{display:flex;justify-content:space-between;align-items:center}
+.proj-name{font-size:16px;font-weight:700}
+.proj-meta{font-size:13px;color:var(--mut);margin-top:4px}
+.tag{font-size:12px;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.tag-草勘中{background:#e0e7ff;color:#3730a3}
+.tag-待备案{background:#fef3c7;color:var(--amber)}
+.tag-已备案{background:#dcfce7;color:var(--green)}
+.tag-已并网{background:#dbeafe;color:#1d4ed8}
+.progress{height:6px;background:var(--light);border-radius:3px;margin-top:8px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--blue2)}
+.stat-grid{display:flex;gap:10px;text-align:center}
+.stat{flex:1;background:var(--light);border-radius:10px;padding:10px 4px}
+.stat b{display:block;font-size:19px;color:var(--blue)}
+.stat span{font-size:12px;color:var(--mut)}
+.check-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f2f5}
+.check-item:last-child{border-bottom:none}
+.check-item input{width:20px;height:20px;flex:0 0 auto;accent-color:var(--blue2)}
+.check-item span{font-size:14px}
+.slider-row{display:flex;align-items:center;gap:10px}
+.slider-row input[type=range]{flex:1;accent-color:var(--blue2)}
+.slider-val{font-weight:700;color:var(--blue);min-width:44px;text-align:right}
+.plan-box{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.plan-box svg{display:block;width:100%;height:auto}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 18px;border-radius:9px;font-size:14px;display:none;z-index:99;max-width:90%;text-align:center}
+.empty{text-align:center;color:var(--mut);padding:36px 0;font-size:14px}
+.back{color:#fff;text-decoration:none;font-size:14px}
+.topbar{display:flex;justify-content:space-between;align-items:center}
+.note{font-size:12px;color:var(--mut)}
+.warn{background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:10px 12px;font-size:13px;color:#92400e;margin-bottom:12px}
+.hidden{display:none!important}
+@media print{
+  body{background:#fff}
+  header,.wrap>*:not(#printArea),.toast{display:none!important}
+  #printArea{display:block!important}
+  #printArea svg{width:100%!important;height:auto!important}
+  .wrap{padding:0;max-width:none}
+}
+#printArea{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <div>
+      <h1>☀️ 光伏草勘备案助手</h1>
+      <p>不用联网 · 数据存在本机浏览器里</p>
+    </div>
+    <a class="back hidden" id="backBtn" href="javascript:void(0)">‹ 返回列表</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="storeWarn" class="warn hidden">⚠️ 当前浏览器无法保存数据（比如 iPhone 直接用文件 App 打开时）。请用 Chrome 打开本文件，或经常用「导出备份」保存项目。</div>
+
+  <!-- ===== 项目列表 ===== -->
+  <div id="listView">
+    <div class="card">
+      <div class="field" style="margin-bottom:8px">
+        <input id="searchBox" type="text" placeholder="🔍 搜索户主姓名 / 地址">
+      </div>
+      <div class="chips" id="statusChips"></div>
+      <button class="btn btn-primary btn-block" id="newBtn">＋ 新建草勘项目</button>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="exportBtn">📤 导出备份</button>
+        <button class="btn btn-ghost" id="importBtn">📥 导入备份</button>
+        <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+      </div>
+      <p class="note" style="margin-top:8px">导出备份可把项目传到另一台手机：导出 JSON 文件 → 发到另一台手机 → 在那边点「导入备份」。</p>
+    </div>
+    <div id="projList"></div>
+  </div>
+
+  <!-- ===== 项目编辑 ===== -->
+  <div id="editView" class="hidden">
+    <div class="card">
+      <h2>基本信息</h2>
+      <div class="field"><label>户主姓名 <span class="req">*</span></label><input id="f_name" type="text" placeholder="必填，如：王增辉"></div>
+      <div class="row">
+        <div class="field"><label>电话</label><input id="f_phone" type="tel" placeholder="户主电话"></div>
+        <div class="field"><label>勘查日期</label><input id="f_date" type="date"></div>
+      </div>
+      <div class="field"><label>详细地址（到村）</label><input id="f_addr" type="text" placeholder="如：河北省邢台市××县××镇××村"></div>
+      <div class="row">
+        <div class="field"><label>勘查人</label><input id="f_surveyor" type="text" placeholder="勘查人姓名"></div>
+        <div class="field"><label>状态</label>
+          <select id="f_status"><option>草勘中</option><option>待备案</option><option>已备案</option><option>已并网</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>院落与建筑尺寸（米）</h2>
+      <p class="note" style="margin-bottom:8px">填 0 表示确认是 0，留空表示未填，两者会区分显示。</p>
+      <div class="row">
+        <div class="field"><label>南北总长</label><input id="f_ns" type="number" step="0.01" inputmode="decimal" placeholder="如 11.5"></div>
+        <div class="field"><label>东西总长</label><input id="f_ew" type="number" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>北过墙高</label><input id="f_nwall" type="number" step="0.01" inputmode="decimal"></div>
+        <div class="field"><label>北高</label><input id="f_nhigh" type="number" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>东过道宽</label><input id="f_pass" type="number" step="0.01" inputmode="decimal" placeholder="如 1.85"></div>
+        <div class="field"><label>东土墙高</label><input id="f_ewallh" type="number" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="field"><label>东土墙厚（米）</label><input id="f_ewallt" type="number" step="0.01" inputmode="decimal" placeholder="如 0.4"></div>
+      <h3>主房（老房）</h3>
+      <div class="row">
+        <div class="field"><label>北端</label><input id="f_mn" type="number" step="0.01" inputmode="decimal"></div>
+        <div class="field"><label>东墙北段</label><input id="f_me1" type="number" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>东墙南段</label><input id="f_me2" type="number" step="0.01" inputmode="decimal"></div>
+        <div class="field"><label>南端距南房</label><input id="f_ms" type="number" step="0.01" inputmode="decimal"></div>
+      </div>
+      <h3>南房</h3>
+      <div class="row">
+        <div class="field"><label>东北角</label><input id="f_sne" type="number" step="0.01" inputmode="decimal"></div>
+        <div class="field"><label>西墙①</label><input id="f_sw1" type="number" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>西墙②</label><input id="f_sw2" type="number" step="0.01" inputmode="decimal"></div>
+        <div class="field"><label>东侧</label><input id="f_se" type="number" step="0.01" inputmode="decimal"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>组件布置</h2>
+      <div class="row">
+        <div class="field"><label>院子东西块数</label><input id="f_ycol" type="number" step="1" min="0" inputmode="numeric" placeholder="如 5"></div>
+        <div class="field"><label>院子南北排数</label><input id="f_yrow" type="number" step="1" min="0" inputmode="numeric" placeholder="如 5"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>老房屋顶排数</label><input id="f_rrow" type="number" step="1" min="0" inputmode="numeric" placeholder="如 3"></div>
+        <div class="field"><label>每排块数</label><input id="f_rper" type="number" step="1" min="0" inputmode="numeric" placeholder="如 9"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>组件功率（W）</label><input id="f_watt" type="number" step="1" min="0" inputmode="numeric" value="585"></div>
+        <div class="field"><label>上网模式</label>
+          <select id="f_mode"><option>自发自用余电上网</option><option>全额上网</option><option>全部自发自用</option></select>
+        </div>
+      </div>
+      <div class="stat-grid" style="margin-top:6px">
+        <div class="stat"><b id="st_yard">0 块</b><span>院子</span></div>
+        <div class="stat"><b id="st_roof">0 块</b><span>老房屋顶</span></div>
+        <div class="stat"><b id="st_total">0 块</b><span>共计</span></div>
+        <div class="stat"><b id="st_kw">0 kW</b><span>装机容量</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>备注</h2>
+      <div class="check-item"><input type="checkbox" id="f_note1"><span>热水器、烟囱可移动</span></div>
+      <div class="check-item"><input type="checkbox" id="f_note2"><span>四周无遮挡</span></div>
+      <div class="field" style="margin-top:10px"><label>其他备注</label><textarea id="f_noteText" placeholder="其他现场情况……"></textarea></div>
+    </div>
+
+    <div class="card">
+      <h2>草勘平面图</h2>
+      <div class="plan-box" id="planBox"></div>
+      <div class="btn-row">
+        <button class="btn btn-dark" id="pngBtn">⬇ 下载平面图 PNG</button>
+        <button class="btn btn-ghost" id="printBtn">🖨 打印</button>
+      </div>
+      <p class="note" style="margin-top:8px">平面图随上面填写的内容实时更新。打印时只打印平面图。</p>
+    </div>
+
+    <div class="card">
+      <h2>备案材料清单 <span id="ckProg" style="font-size:13px;color:var(--mut);font-weight:400"></span></h2>
+      <div id="checklist"></div>
+    </div>
+
+    <div class="card">
+      <h2>收益测算</h2>
+      <div class="row">
+        <div class="field"><label>年等效小时</label><input id="f_hours" type="number" step="1" inputmode="numeric" value="1250"></div>
+        <div class="field"><label>单位造价（元/W）</label><input id="f_cost" type="number" step="0.1" inputmode="decimal" value="3.2"></div>
+      </div>
+      <div class="field"><label>自用比例</label>
+        <div class="slider-row"><input id="f_self" type="range" min="0" max="100" step="5" value="70"><span class="slider-val" id="selfVal">70%</span></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>自用电价（元/度）</label><input id="f_sp" type="number" step="0.01" inputmode="decimal" value="0.75"></div>
+        <div class="field"><label>上网电价（元/度）</label><input id="f_ep" type="number" step="0.01" inputmode="decimal" value="0.35"></div>
+      </div>
+      <div class="stat-grid" style="margin-top:6px">
+        <div class="stat"><b id="rv_gen">—</b><span>年发电量（度）</span></div>
+        <div class="stat"><b id="rv_rev">—</b><span>年收益（元）</span></div>
+      </div>
+      <div class="stat-grid" style="margin-top:10px">
+        <div class="stat"><b id="rv_inv">—</b><span>总投资（元）</span></div>
+        <div class="stat"><b id="rv_pay">—</b><span>回本年限</span></div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-bottom:12px">
+      <button class="btn btn-primary" id="saveBtn" style="flex:2">💾 保存项目</button>
+      <button class="btn btn-ghost" id="copyBtn">复制</button>
+      <button class="btn btn-danger" id="delBtn">删除</button>
+    </div>
+  </div>
+
+  <div id="printArea"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+/* ============ 数据与存储 ============ */
+var KEY = 'pv_offline_projects_v1';
+var CHECK_ITEMS = ['户主身份证 / 营业执照','场地权属证明（房产证/宅基地证）','项目备案文件','并网意向书','屋顶照片','结构安全核算报告','银行账户信息','租赁协议（如租用屋顶）','购售电合同 / 并网调度协议'];
+var STATUSES = ['全部','草勘中','待备案','已备案','已并网'];
+var storeOK = true;
+var projects = [];
+var curId = null;
+var curFilter = '全部';
+var delArmed = false;
+
+function seedProjects(){
+  return [{
+    id:'seed-wzh', name:'王增辉', phone:'', addr:'河北省邢台市', date:'2026-11-17', surveyor:'', status:'待备案',
+    ns:'11.5', ew:'', nwall:'3', nhigh:'2', pass:'1.85', ewallh:'2.75', ewallt:'0.4',
+    mn:'1.5', me1:'3.3', me2:'3.6', ms:'0.3', sne:'1.6', sw1:'4', sw2:'0.8', se:'1.6',
+    ycol:'5', yrow:'5', rrow:'3', rper:'9', watt:'585', mode:'自发自用余电上网',
+    note1:true, note2:true, noteText:'',
+    checklist:[false,false,false,false,false,false,false,false,false],
+    hours:'1250', cost:'3.2', self:'70', sp:'0.75', ep:'0.35'
+  }];
+}
+function storeLoad(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw){ var arr = JSON.parse(raw); if(Array.isArray(arr)) return arr; }
+    return null;
+  }catch(e){ storeOK = false; return null; }
+}
+function storeSave(){
+  if(!storeOK) return;
+  try{ localStorage.setItem(KEY, JSON.stringify(projects)); }
+  catch(e){ storeOK = false; document.getElementById('storeWarn').classList.remove('hidden'); }
+}
+function uid(){ return 'p' + Date.now().toString(36) + Math.floor(Math.random()*1e4).toString(36); }
+
+/* ============ 工具 ============ */
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function num(v){ if(v==null||v==='') return null; var n = parseFloat(v); return isNaN(n)?null:n; }
+function int0(v){ var n = parseInt(v,10); return isNaN(n)||n<0?0:n; }
+function fmt(v){ var n = num(v); return n==null?'未填':String(n); }
+function toast(msg){
+  var t = $('toast'); t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(function(){ t.style.display='none'; }, 2200);
+}
+function counts(p){
+  var y = int0(p.ycol)*int0(p.yrow);
+  var r = int0(p.rrow)*int0(p.rper);
+  var w = num(p.watt); w = w==null?0:w;
+  return { yard:y, roof:r, total:y+r, kw:(y+r)*w/1000 };
+}
+function todayStr(){
+  var d = new Date();
+  var m = ('0'+(d.getMonth()+1)).slice(-2), day = ('0'+d.getDate()).slice(-2);
+  return d.getFullYear()+'-'+m+'-'+day;
+}
+
+/* ============ 列表 ============ */
+function renderChips(){
+  $('statusChips').innerHTML = STATUSES.map(function(s){
+    return '<span class="chip'+(s===curFilter?' on':'')+'" data-s="'+s+'">'+s+'</span>';
+  }).join('');
+  var chips = $('statusChips').querySelectorAll('.chip');
+  chips.forEach(function(c){ c.onclick = function(){ curFilter = c.getAttribute('data-s'); renderChips(); renderList(); }; });
+}
+function renderList(){
+  var q = ($('searchBox').value||'').trim();
+  var list = projects.filter(function(p){
+    if(curFilter!=='全部' && p.status!==curFilter) return false;
+    if(q && (p.name||'').indexOf(q)<0 && (p.addr||'').indexOf(q)<0) return false;
+    return true;
+  });
+  if(!list.length){
+    $('projList').innerHTML = '<div class="card empty">暂无项目，点上面「新建草勘项目」开始记录。</div>';
+    return;
+  }
+  $('projList').innerHTML = list.map(function(p){
+    var c = counts(p);
+    var done = (p.checklist||[]).filter(Boolean).length;
+    var pct = Math.round(done/CHECK_ITEMS.length*100);
+    return '<div class="card proj" data-id="'+p.id+'">'
+      + '<div class="proj-top"><span class="proj-name">'+esc(p.name||'（未命名）')+'</span>'
+      + '<span class="tag tag-'+esc(p.status||'草勘中')+'">'+esc(p.status||'草勘中')+'</span></div>'
+      + '<div class="proj-meta">'+esc(p.addr||'地址未填')+' · '+esc(p.date||'')+'</div>'
+      + '<div class="proj-meta">'+c.total+'块 · '+c.kw.toFixed(2)+'kW · 材料 '+done+'/'+CHECK_ITEMS.length+'</div>'
+      + '<div class="progress"><i style="width:'+pct+'%"></i></div>'
+      + '</div>';
+  }).join('');
+  $('projList').querySelectorAll('.proj').forEach(function(el){
+    el.onclick = function(){ openEditor(el.getAttribute('data-id')); };
+  });
+}
+
+/* ============ 编辑器 ============ */
+var FIELDS = ['name','phone','date','addr','surveyor','status','ns','ew','nwall','nhigh','pass','ewallh','ewallt','mn','me1','me2','ms','sne','sw1','sw2','se','ycol','yrow','rrow','rper','watt','mode','noteText','hours','cost','self','sp','ep'];
+var FID = {name:'f_name',phone:'f_phone',date:'f_date',addr:'f_addr',surveyor:'f_surveyor',status:'f_status',ns:'f_ns',ew:'f_ew',nwall:'f_nwall',nhigh:'f_nhigh',pass:'f_pass',ewallh:'f_ewallh',ewallt:'f_ewallt',mn:'f_mn',me1:'f_me1',me2:'f_me2',ms:'f_ms',sne:'f_sne',sw1:'f_sw1',sw2:'f_sw2',se:'f_se',ycol:'f_ycol',yrow:'f_yrow',rrow:'f_rrow',rper:'f_rper',watt:'f_watt',mode:'f_mode',noteText:'f_noteText',hours:'f_hours',cost:'f_cost',self:'f_self',sp:'f_sp',ep:'f_ep'};
+function blankProject(){
+  return { id:uid(), name:'', phone:'', addr:'', date:todayStr(), surveyor:'', status:'草勘中',
+    ns:'', ew:'', nwall:'', nhigh:'', pass:'', ewallh:'', ewallt:'',
+    mn:'', me1:'', me2:'', ms:'', sne:'', sw1:'', sw2:'', se:'',
+    ycol:'', yrow:'', rrow:'', rper:'', watt:'585', mode:'自发自用余电上网',
+    note1:false, note2:false, noteText:'',
+    checklist:[false,false,false,false,false,false,false,false,false],
+    hours:'1250', cost:'3.2', self:'70', sp:'0.75', ep:'0.35' };
+}
+function fillForm(p){
+  FIELDS.forEach(function(k){ var el = $(FID[k]); if(el) el.value = (p[k]==null?'':p[k]); });
+  $('f_note1').checked = !!p.note1;
+  $('f_note2').checked = !!p.note2;
+  renderChecklist(p);
+  updateDerived(p);
+}
+function collectForm(){
+  var p = { id: curId };
+  FIELDS.forEach(function(k){ var el = $(FID[k]); p[k] = el ? el.value : ''; });
+  p.note1 = $('f_note1').checked;
+  p.note2 = $('f_note2').checked;
+  p.checklist = CHECK_ITEMS.map(function(_,i){
+    var cb = $('ck_'+i); return cb ? cb.checked : false;
+  });
+  return p;
+}
+function renderChecklist(p){
+  var done = (p.checklist||[]).filter(Boolean).length;
+  $('ckProg').textContent = '（已备 ' + done + '/' + CHECK_ITEMS.length + '）';
+  $('checklist').innerHTML = CHECK_ITEMS.map(function(t,i){
+    var on = p.checklist && p.checklist[i] ? ' checked' : '';
+    return '<div class="check-item"><input type="checkbox" id="ck_'+i+'"'+on+'><span>'+t+'</span></div>';
+  }).join('');
+  CHECK_ITEMS.forEach(function(_,i){
+    $('ck_'+i).onchange = function(){
+      var cur = collectForm();
+      var d = cur.checklist.filter(Boolean).length;
+      $('ckProg').textContent = '（已备 ' + d + '/' + CHECK_ITEMS.length + '）';
+    };
+  });
+}
+function updateDerived(p){
+  var c = counts(p);
+  $('st_yard').textContent = c.yard + ' 块';
+  $('st_roof').textContent = c.roof + ' 块';
+  $('st_total').textContent = c.total + ' 块';
+  $('st_kw').textContent = c.kw.toFixed(2) + ' kW';
+  $('selfVal').textContent = (p.self===''?'0':p.self) + '%';
+  var hours = num(p.hours)||0, selfPct = (num(p.self)||0)/100;
+  var sp = num(p.sp)||0, ep = num(p.ep)||0, cost = num(p.cost)||0;
+  var gen = c.kw * hours;
+  var rev = gen*selfPct*sp + gen*(1-selfPct)*ep;
+  var inv = c.kw*1000*cost;
+  $('rv_gen').textContent = gen ? Math.round(gen).toLocaleString() : '—';
+  $('rv_rev').textContent = rev ? '¥' + Math.round(rev).toLocaleString() : '—';
+  $('rv_inv').textContent = inv ? '¥' + Math.round(inv).toLocaleString() : '—';
+  $('rv_pay').textContent = (rev>0 && inv>0) ? (inv/rev).toFixed(1) + ' 年' : '—';
+  $('planBox').innerHTML = buildPlanSVG(p);
+}
+function openEditor(id){
+  curId = id;
+  delArmed = false; $('delBtn').textContent = '删除';
+  var p = projects.find(function(x){ return x.id===id; });
+  if(!p){ p = blankProject(); curId = p.id; }
+  fillForm(p);
+  $('listView').classList.add('hidden');
+  $('editView').classList.remove('hidden');
+  $('backBtn').classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+function backToList(){
+  renderList();
+  $('editView').classList.add('hidden');
+  $('listView').classList.remove('hidden');
+  $('backBtn').classList.add('hidden');
+  window.scrollTo(0,0);
+}
+function saveCurrent(){
+  var p = collectForm();
+  if(!p.name.trim()){ toast('户主姓名必填'); $('f_name').focus(); return false; }
+  var i = projects.findIndex(function(x){ return x.id===p.id; });
+  if(i>=0) projects[i] = p; else projects.push(p);
+  storeSave();
+  toast('已保存 ✓');
+  return true;
+}
+
+/* ============ 平面图（SVG） ============ */
+function panelGrid(x, y, w, h, cols, rows){
+  cols = int0(cols); rows = int0(rows);
+  if(!cols || !rows) return '';
+  var total = cols*rows;
+  if(total > 1200){
+    return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#2563eb" opacity="0.85"/>'
+      + '<text x="'+(x+w/2)+'" y="'+(y+h/2+5)+'" font-size="13" fill="#fff" text-anchor="middle">共'+total+'块</text>';
+  }
+  var cw = Math.min(46, (w-6)/cols), ch = Math.min(30, (h-6)/rows);
+  var gw = cw*cols, gh = ch*rows;
+  var ox = x + (w-gw)/2, oy = y + (h-gh)/2;
+  var s = '';
+  for(var r=0;r<rows;r++) for(var c=0;c<cols;c++){
+    s += '<rect x="'+(ox+c*cw+1).toFixed(1)+'" y="'+(oy+r*ch+1).toFixed(1)
+      + '" width="'+Math.max(1,cw-2).toFixed(1)+'" height="'+Math.max(1,ch-2).toFixed(1)
+      + '" fill="#2563eb" stroke="#ffffff" stroke-width="0.5"/>';
+  }
+  return s;
+}
+function trunc(s, n){ s = String(s==null?'':s); return s.length>n ? s.slice(0,n)+'…' : s; }
+function buildPlanSVG(p){
+  var c = counts(p);
+  var W = 780, H = 680;
+  var s = '';
+  s += '<svg id="planSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'">';
+  s += '<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#ffffff"/>';
+  /* 标题 */
+  s += '<text x="40" y="32" font-size="20" font-weight="bold" fill="#1e3a5f">'+esc(p.name||'（未填户主）')+' · 光伏草勘平面图</text>';
+  s += '<text x="40" y="56" font-size="12" fill="#667085">'+esc(trunc(p.addr||'地址未填', 26))+'　|　'+c.total+'块 · '+c.kw.toFixed(2)+'kW · '+esc(p.mode||'')+' · '+esc(p.status||'')+'</text>';
+  s += '<line x1="40" y1="68" x2="760" y2="68" stroke="#d7dee8" stroke-width="1"/>';
+  /* 场地边界 + 虚线范围 */
+  s += '<rect x="40" y="90" width="480" height="460" fill="#fbfcfe" stroke="#1e3a5f" stroke-width="2.5"/>';
+  s += '<rect x="58" y="108" width="444" height="424" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="6 4"/>';
+  /* 指北针（画在边界之后，避免被底色盖住） */
+  s += '<g><circle cx="492" cy="112" r="15" fill="#fff" stroke="#1e3a5f" stroke-width="1.5"/>'
+    + '<polygon points="492,100 497,118 492,114 487,118" fill="#1e3a5f"/>'
+    + '<text x="492" y="142" font-size="12" font-weight="bold" fill="#1e3a5f" text-anchor="middle">北</text></g>';
+  /* 主房（西）+ 老房屋顶组件 */
+  s += '<rect x="70" y="130" width="110" height="300" fill="#e8eef5" stroke="#1e3a5f" stroke-width="1.5"/>';
+  s += panelGrid(76, 136, 98, 262, p.rrow, p.rper);
+  s += '<text x="125" y="418" font-size="13" fill="#1e3a5f" text-anchor="middle">主房（老房）</text>';
+  /* 南房 */
+  s += '<rect x="70" y="440" width="360" height="90" fill="#e8eef5" stroke="#1e3a5f" stroke-width="1.5"/>';
+  s += '<text x="250" y="490" font-size="13" fill="#1e3a5f" text-anchor="middle">南房</text>';
+  /* 院子 + 院子组件 */
+  s += '<text x="350" y="126" font-size="13" fill="#1e3a5f" text-anchor="middle">院子</text>';
+  s += panelGrid(205, 140, 290, 275, p.ycol, p.yrow);
+  /* 尺寸标注 */
+  s += '<text x="24" y="320" font-size="12" fill="#1e3a5f" transform="rotate(-90 24 320)" text-anchor="middle">南北总长 '+fmt(p.ns)+'米</text>';
+  s += '<text x="180" y="82" font-size="11" fill="#475569">北过墙高 '+fmt(p.nwall)+'米 · 北高 '+fmt(p.nhigh)+'米</text>';
+  s += '<text x="508" y="300" font-size="11" fill="#475569" transform="rotate(-90 508 300)" text-anchor="middle">过道 '+fmt(p.pass)+'米</text>';
+  s += '<text x="184" y="210" font-size="10" fill="#475569">'+fmt(p.me1)+'米</text>';
+  s += '<text x="184" y="340" font-size="10" fill="#475569">'+fmt(p.me2)+'米</text>';
+  s += '<text x="40" y="568" font-size="11" fill="#475569">南房：东北角 '+fmt(p.sne)+'米 · 西墙 '+fmt(p.sw1)+'米 / '+fmt(p.sw2)+'米 · 东侧 '+fmt(p.se)+'米</text>';
+  /* 右侧信息栏 */
+  var x = 545, w = 215, y = 90;
+  function box(title, lines){
+    var h = 30 + lines.length*19 + 8;
+    var o = '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#ffffff" stroke="#d7dee8" stroke-width="1" rx="6"/>';
+    o += '<text x="'+(x+12)+'" y="'+(y+21)+'" font-size="13" font-weight="bold" fill="#1e3a5f">'+title+'</text>';
+    lines.forEach(function(L, i){
+      o += '<text x="'+(x+12)+'" y="'+(y+43+i*19)+'" font-size="11.5" fill="#333"><tspan fill="#667085">'+L[0]+'</tspan>'+esc(L[1])+'</text>';
+    });
+    y += h + 10;
+    return o;
+  }
+  s += box('项目信息', [
+    ['户主：', trunc(p.name||'未填', 12)],
+    ['电话：', trunc(p.phone||'未填', 13)],
+    ['勘查日期：', p.date||'未填'],
+    ['勘查人：', trunc(p.surveyor||'未填', 12)],
+    ['状态：', p.status||'草勘中'],
+    ['上网模式：', p.mode||'']
+  ]);
+  s += box('组件布置', [
+    ['院子：', (int0(p.ycol)||'—')+' × '+(int0(p.yrow)||'—')+' = '+c.yard+'块'],
+    ['老房屋顶：', (int0(p.rrow)||'—')+'排 × '+(int0(p.rper)||'—')+' = '+c.roof+'块'],
+    ['组件功率：', (num(p.watt)==null?'未填':num(p.watt)+'W')],
+    ['共计：', c.total+'块'],
+    ['装机容量：', c.kw.toFixed(2)+' kW']
+  ]);
+  s += box('尺寸汇总', [
+    ['南北总长：', fmt(p.ns)+'米'],
+    ['东西总长：', fmt(p.ew)+'米'],
+    ['北过墙高：', fmt(p.nwall)+'米'],
+    ['东过道：', fmt(p.pass)+'米'],
+    ['东土墙：', '高'+fmt(p.ewallh)+'米 / 厚'+fmt(p.ewallt)+'米']
+  ]);
+  var notes = [];
+  if(p.note1) notes.push(['✓ ', '热水器、烟囱可移动']);
+  if(p.note2) notes.push(['✓ ', '四周无遮挡']);
+  if(p.noteText) notes.push(['备注：', trunc(p.noteText, 14)]);
+  if(!notes.length) notes.push(['', '无']);
+  s += box('备注', notes);
+  s += '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="34" fill="#ffffff" stroke="#d7dee8" stroke-width="1" rx="6"/>';
+  s += '<rect x="'+(x+12)+'" y="'+(y+12)+'" width="12" height="10" fill="#2563eb"/>';
+  s += '<text x="'+(x+30)+'" y="'+(y+21)+'" font-size="11.5" fill="#333">光伏组件</text>';
+  s += '<rect x="'+(x+110)+'" y="'+(y+12)+'" width="12" height="10" fill="none" stroke="#94a3b8" stroke-dasharray="3 2"/>';
+  s += '<text x="'+(x+128)+'" y="'+(y+21)+'" font-size="11.5" fill="#333">虚线范围</text>';
+  /* 页脚 */
+  s += '<text x="40" y="648" font-size="11" fill="#94a3b8">本图根据现场手绘草图整理，不按比例；尺寸以草图标注为准，正式备案前请复核。</text>';
+  s += '<text x="40" y="666" font-size="11" fill="#94a3b8">示意比例 · 整理日期：'+esc(p.date||todayStr())+' · 光伏草勘备案助手</text>';
+  s += '</svg>';
+  return s;
+}
+
+/* ============ PNG / 打印 ============ */
+function exportPNG(){
+  var svgEl = $('planBox').querySelector('svg');
+  if(!svgEl){ toast('平面图还没生成'); return; }
+  var xml = new XMLSerializer().serializeToString(svgEl);
+  var img = new Image();
+  img.onload = function(){
+    var scale = 2;
+    var cv = document.createElement('canvas');
+    cv.width = 780*scale; cv.height = 680*scale;
+    var ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    cv.toBlob(function(blob){
+      if(!blob){ toast('导出失败，请重试'); return; }
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = ((collectForm().name||'草勘')) + '_平面图.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+      toast('平面图已下载 ✓');
+    }, 'image/png');
+  };
+  img.onerror = function(){ toast('导出失败，请重试'); };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+}
+function doPrint(){
+  var svgEl = $('planBox').querySelector('svg');
+  if(!svgEl){ toast('平面图还没生成'); return; }
+  $('printArea').innerHTML = svgEl.outerHTML;
+  window.print();
+}
+
+/* ============ 备份 ============ */
+function exportBackup(){
+  var blob = new Blob([JSON.stringify(projects,null,2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '光伏草勘备份_' + todayStr() + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+  toast('备份已下载 ✓（共'+projects.length+'个项目）');
+}
+function importBackup(file){
+  var rd = new FileReader();
+  rd.onload = function(){
+    try{
+      var arr = JSON.parse(rd.result);
+      if(!Array.isArray(arr)) throw new Error('bad');
+      var ok = arr.filter(function(x){ return x && typeof x==='object' && x.name; });
+      if(!ok.length){ toast('文件里没有可用项目'); return; }
+      if(!confirm('导入 '+ok.length+' 个项目？将与现有项目合并。')) return;
+      ok.forEach(function(x){ x.id = uid(); projects.push(x); });
+      storeSave(); renderList();
+      toast('已导入 '+ok.length+' 个项目 ✓');
+    }catch(e){ toast('导入失败：文件格式不对'); }
+  };
+  rd.readAsText(file);
+}
+
+/* ============ 初始化 ============ */
+function init(){
+  var loaded = storeLoad();
+  projects = (loaded && loaded.length) ? loaded : seedProjects();
+  if(!loaded) storeSave();
+  if(!storeOK) $('storeWarn').classList.remove('hidden');
+  renderChips(); renderList();
+  $('searchBox').addEventListener('input', renderList);
+  $('newBtn').onclick = function(){ openEditor(null); };
+  $('backBtn').onclick = backToList;
+  $('saveBtn').onclick = function(){ if(saveCurrent()) backToList(); };
+  $('copyBtn').onclick = function(){
+    var p = collectForm();
+    if(!p.name.trim()){ toast('先填户主姓名再复制'); return; }
+    var c = JSON.parse(JSON.stringify(p));
+    c.id = uid(); c.name = p.name + '（复制）';
+    projects.push(c); storeSave();
+    curId = c.id; fillForm(c);
+    toast('已复制为「' + c.name + '」');
+  };
+  $('delBtn').onclick = function(){
+    if(!delArmed){
+      delArmed = true; $('delBtn').textContent = '确认删除？';
+      setTimeout(function(){ delArmed=false; $('delBtn').textContent='删除'; }, 3000);
+      return;
+    }
+    projects = projects.filter(function(x){ return x.id!==curId; });
+    storeSave(); toast('已删除'); backToList();
+  };
+  $('pngBtn').onclick = exportPNG;
+  $('printBtn').onclick = doPrint;
+  $('exportBtn').onclick = exportBackup;
+  $('importBtn').onclick = function(){ $('importFile').click(); };
+  $('importFile').onchange = function(){ if(this.files[0]) importBackup(this.files[0]); this.value=''; };
+  $('editView').addEventListener('input', function(){ updateDerived(collectForm()); });
+  $('editView').addEventListener('change', function(){ updateDerived(collectForm()); });
+}
+init();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
