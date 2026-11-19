@@ -1,10 +1,10 @@
 /* 光伏草勘备案助手 Service Worker：离线可用，新版发布后自动更新 */
-var CACHE = 'pv-helper-v1';
+var CACHE = 'pv-helper-v2';
 var ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon.svg'
+  './',
+  'index.html',
+  'manifest.json',
+  'icon.svg'
 ];
 
 self.addEventListener('install', function (e) {
@@ -32,7 +32,7 @@ self.addEventListener('fetch', function (e) {
         caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
         return res;
       }).catch(function () {
-        return caches.match(e.request).then(function (r) { return r || caches.match('/index.html'); });
+        return caches.match(e.request).then(function (r) { return r || caches.match('index.html'); });
       })
     );
     return;
