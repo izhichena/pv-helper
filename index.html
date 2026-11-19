@@ -61,6 +61,12 @@ textarea{resize:vertical;min-height:64px}
 .check-item:last-child{border-bottom:none}
 .check-item input{width:20px;height:20px;flex:0 0 auto;accent-color:var(--blue2)}
 .check-item span{font-size:14px}
+.bld-card{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:#fbfcfe}
+.bld-top{display:flex;gap:8px;align-items:flex-end}
+.bld-top .field{margin-bottom:0}
+.bld-name{flex:2}
+.bld-side{flex:1}
+.bld-top .btn{padding:10px 12px;white-space:nowrap}
 .slider-row{display:flex;align-items:center;gap:10px}
 .slider-row input[type=range]{flex:1;accent-color:var(--blue2)}
 .slider-val{font-weight:700;color:var(--blue);min-width:44px;text-align:right}
@@ -170,14 +176,17 @@ textarea{resize:vertical;min-height:64px}
     </div>
 
     <div class="card">
+      <h2>房屋</h2>
+      <p class="note" style="margin-bottom:8px">按实际院落添加房屋，每栋房子填长、宽、高和屋顶组件，平面图按比例画出来。</p>
+      <div id="bldList"></div>
+      <button class="btn btn-ghost btn-block" id="addBldBtn" type="button">＋ 添加房屋</button>
+    </div>
+
+    <div class="card">
       <h2>组件布置</h2>
       <div class="row">
         <div class="field"><label>院子东西块数</label><input id="f_ycol" type="number" step="1" min="0" inputmode="numeric" placeholder="如 5"></div>
         <div class="field"><label>院子南北排数</label><input id="f_yrow" type="number" step="1" min="0" inputmode="numeric" placeholder="如 5"></div>
-      </div>
-      <div class="row">
-        <div class="field"><label>老房屋顶排数</label><input id="f_rrow" type="number" step="1" min="0" inputmode="numeric" placeholder="如 3"></div>
-        <div class="field"><label>每排块数</label><input id="f_rper" type="number" step="1" min="0" inputmode="numeric" placeholder="如 9"></div>
       </div>
       <div class="row">
         <div class="field"><label>组件功率（W）</label><input id="f_watt" type="number" step="1" min="0" inputmode="numeric" value="585"></div>
@@ -187,7 +196,7 @@ textarea{resize:vertical;min-height:64px}
       </div>
       <div class="stat-grid" style="margin-top:6px">
         <div class="stat"><b id="st_yard">0 块</b><span>院子</span></div>
-        <div class="stat"><b id="st_roof">0 块</b><span>老房屋顶</span></div>
+        <div class="stat"><b id="st_roof">0 块</b><span>房屋顶</span></div>
         <div class="stat"><b id="st_total">0 块</b><span>共计</span></div>
         <div class="stat"><b id="st_kw">0 kW</b><span>装机容量</span></div>
       </div>
@@ -267,13 +276,17 @@ function seedProjects(){
     ycol:'5', yrow:'5', rrow:'3', rper:'9', watt:'585', mode:'自发自用余电上网',
     note1:true, note2:true, noteText:'',
     checklist:[false,false,false,false,false,false,false,false,false],
-    hours:'1250', cost:'3.2', self:'70', sp:'0.75', ep:'0.35'
+    hours:'1250', cost:'3.2', self:'70', sp:'0.75', ep:'0.35',
+    buildings:[
+      {id:'seed-b1', name:'主房（老房）', side:'西', len:'6.9', wid:'1.5', hgt:'', prow:'3', pper:'9', notch:null},
+      {id:'seed-b2', name:'南房', side:'南', len:'', wid:'', hgt:'', prow:'', pper:'', notch:null}
+    ]
   }];
 }
 function storeLoad(){
   try{
     var raw = localStorage.getItem(KEY);
-    if(raw){ var arr = JSON.parse(raw); if(Array.isArray(arr)) return arr; }
+    if(raw){ var arr = JSON.parse(raw); if(Array.isArray(arr)){ arr.forEach(migrate); return arr; } }
     return null;
   }catch(e){ storeOK = false; return null; }
 }
@@ -283,6 +296,24 @@ function storeSave(){
   catch(e){ storeOK = false; document.getElementById('storeWarn').classList.remove('hidden'); }
 }
 function uid(){ return 'p' + Date.now().toString(36) + Math.floor(Math.random()*1e4).toString(36); }
+function hasVal(v){ return v!=null && String(v).trim()!==''; }
+/* 老项目迁移：没有 buildings 数组时，按旧字段自动生成房屋（旧字段全部保留） */
+function migrate(p){
+  if(!p || Array.isArray(p.buildings)) return p;
+  var blds = [];
+  if(hasVal(p.me1)||hasVal(p.me2)||hasVal(p.mn)||hasVal(p.rrow)||hasVal(p.rper)){
+    var len = (num(p.me1)||0)+(num(p.me2)||0);
+    blds.push({id:uid(), name:'主房（老房）', side:'西',
+      len: len>0 ? String(Math.round(len*100)/100) : '',
+      wid: hasVal(p.mn)?String(p.mn):'', hgt:'',
+      prow: hasVal(p.rrow)?String(p.rrow):'', pper: hasVal(p.rper)?String(p.rper):'', notch:null});
+  }
+  if(hasVal(p.sne)||hasVal(p.sw1)||hasVal(p.sw2)||hasVal(p.se)){
+    blds.push({id:uid(), name:'南房', side:'南', len:'', wid:'', hgt:'', prow:'', pper:'', notch:null});
+  }
+  p.buildings = blds;
+  return p;
+}
 
 /* ============ 工具 ============ */
 function $(id){ return document.getElementById(id); }
@@ -298,9 +329,10 @@ function toast(msg){
 }
 function counts(p){
   var y = int0(p.ycol)*int0(p.yrow);
-  var r = int0(p.rrow)*int0(p.rper);
+  var b = 0;
+  (p.buildings||[]).forEach(function(bd){ b += int0(bd.prow)*int0(bd.pper); });
   var w = num(p.watt); w = w==null?0:w;
-  return { yard:y, roof:r, total:y+r, kw:(y+r)*w/1000 };
+  return { yard:y, roof:b, total:y+b, kw:(y+b)*w/1000 };
 }
 function todayStr(){
   var d = new Date();
@@ -345,32 +377,36 @@ function renderList(){
 }
 
 /* ============ 编辑器 ============ */
-var FIELDS = ['name','phone','date','addr','surveyor','status','ns','ew','nwall','nhigh','pass','ewallh','ewallt','mn','me1','me2','ms','sne','sw1','sw2','se','ycol','yrow','rrow','rper','watt','mode','noteText','hours','cost','self','sp','ep'];
-var FID = {name:'f_name',phone:'f_phone',date:'f_date',addr:'f_addr',surveyor:'f_surveyor',status:'f_status',ns:'f_ns',ew:'f_ew',nwall:'f_nwall',nhigh:'f_nhigh',pass:'f_pass',ewallh:'f_ewallh',ewallt:'f_ewallt',mn:'f_mn',me1:'f_me1',me2:'f_me2',ms:'f_ms',sne:'f_sne',sw1:'f_sw1',sw2:'f_sw2',se:'f_se',ycol:'f_ycol',yrow:'f_yrow',rrow:'f_rrow',rper:'f_rper',watt:'f_watt',mode:'f_mode',noteText:'f_noteText',hours:'f_hours',cost:'f_cost',self:'f_self',sp:'f_sp',ep:'f_ep'};
+var FIELDS = ['name','phone','date','addr','surveyor','status','ns','ew','nwall','nhigh','pass','ewallh','ewallt','mn','me1','me2','ms','sne','sw1','sw2','se','ycol','yrow','watt','mode','noteText','hours','cost','self','sp','ep'];
+var FID = {name:'f_name',phone:'f_phone',date:'f_date',addr:'f_addr',surveyor:'f_surveyor',status:'f_status',ns:'f_ns',ew:'f_ew',nwall:'f_nwall',nhigh:'f_nhigh',pass:'f_pass',ewallh:'f_ewallh',ewallt:'f_ewallt',mn:'f_mn',me1:'f_me1',me2:'f_me2',ms:'f_ms',sne:'f_sne',sw1:'f_sw1',sw2:'f_sw2',se:'f_se',ycol:'f_ycol',yrow:'f_yrow',watt:'f_watt',mode:'f_mode',noteText:'f_noteText',hours:'f_hours',cost:'f_cost',self:'f_self',sp:'f_sp',ep:'f_ep'};
 function blankProject(){
   return { id:uid(), name:'', phone:'', addr:'', date:todayStr(), surveyor:'', status:'草勘中',
     ns:'', ew:'', nwall:'', nhigh:'', pass:'', ewallh:'', ewallt:'',
     mn:'', me1:'', me2:'', ms:'', sne:'', sw1:'', sw2:'', se:'',
-    ycol:'', yrow:'', rrow:'', rper:'', watt:'585', mode:'自发自用余电上网',
+    ycol:'', yrow:'', watt:'585', mode:'自发自用余电上网',
     note1:false, note2:false, noteText:'',
     checklist:[false,false,false,false,false,false,false,false,false],
-    hours:'1250', cost:'3.2', self:'70', sp:'0.75', ep:'0.35' };
+    hours:'1250', cost:'3.2', self:'70', sp:'0.75', ep:'0.35',
+    buildings:[] };
 }
 function fillForm(p){
   FIELDS.forEach(function(k){ var el = $(FID[k]); if(el) el.value = (p[k]==null?'':p[k]); });
   $('f_note1').checked = !!p.note1;
   $('f_note2').checked = !!p.note2;
   renderChecklist(p);
+  renderBuildings(p);
   updateDerived(p);
 }
 function collectForm(){
-  var p = { id: curId };
+  var base = projects.find(function(x){ return x.id===curId; });
+  var p = base ? JSON.parse(JSON.stringify(base)) : { id: curId };
   FIELDS.forEach(function(k){ var el = $(FID[k]); p[k] = el ? el.value : ''; });
   p.note1 = $('f_note1').checked;
   p.note2 = $('f_note2').checked;
   p.checklist = CHECK_ITEMS.map(function(_,i){
     var cb = $('ck_'+i); return cb ? cb.checked : false;
   });
+  p.buildings = collectBuildings();
   return p;
 }
 function renderChecklist(p){
@@ -387,6 +423,98 @@ function renderChecklist(p){
       $('ckProg').textContent = '（已备 ' + d + '/' + CHECK_ITEMS.length + '）';
     };
   });
+}
+
+/* ============ 房屋编辑 ============ */
+function bldCardHTML(b){
+  var notchOn = !!(b.notch && b.notch.corner);
+  function selSide(v){
+    return ['北','南','东','西'].map(function(s){
+      return '<option'+(s===v?' selected':'')+'>'+s+'</option>';
+    }).join('');
+  }
+  function selCorner(v){
+    return ['东北','东南','西北','西南'].map(function(s){
+      return '<option'+(s===v?' selected':'')+'>'+s+'</option>';
+    }).join('');
+  }
+  var nt = b.notch||{};
+  return '<div class="bld-card" data-bid="'+esc(b.id)+'">'
+    + '<div class="bld-top">'
+    + '<div class="field bld-name"><label>房屋名称</label><input type="text" data-f="name" placeholder="如：主房" value="'+esc(b.name||'')+'"></div>'
+    + '<div class="field bld-side"><label>方位</label><select data-f="side">'+selSide(b.side||'北')+'</select></div>'
+    + '<button class="btn btn-danger bld-delBtn" type="button">删除</button>'
+    + '</div>'
+    + '<div class="row" style="margin-top:10px">'
+    + '<div class="field"><label>长（南北向，米）</label><input type="number" data-f="len" step="0.01" inputmode="decimal" value="'+esc(b.len||'')+'"></div>'
+    + '<div class="field"><label>宽（东西向，米）</label><input type="number" data-f="wid" step="0.01" inputmode="decimal" value="'+esc(b.wid||'')+'"></div>'
+    + '<div class="field"><label>高（米）</label><input type="number" data-f="hgt" step="0.01" inputmode="decimal" value="'+esc(b.hgt||'')+'"></div>'
+    + '</div>'
+    + '<div class="row">'
+    + '<div class="field"><label>屋顶排数</label><input type="number" data-f="prow" step="1" min="0" inputmode="numeric" value="'+esc(b.prow||'')+'"></div>'
+    + '<div class="field"><label>每排块数</label><input type="number" data-f="pper" step="1" min="0" inputmode="numeric" value="'+esc(b.pper||'')+'"></div>'
+    + '</div>'
+    + '<div class="check-item"><input type="checkbox" data-f="notchOn"'+(notchOn?' checked':'')+'><span>有缺角</span></div>'
+    + '<div class="notch-fields'+(notchOn?'':' hidden')+'">'
+    + '<div class="row">'
+    + '<div class="field"><label>缺角位置</label><select data-f="corner">'+selCorner(nt.corner||'东北')+'</select></div>'
+    + '<div class="field"><label>缺角长（南北向，米）</label><input type="number" data-f="nlen" step="0.01" inputmode="decimal" value="'+esc(nt.nlen||'')+'"></div>'
+    + '<div class="field"><label>缺角宽（东西向，米）</label><input type="number" data-f="nwid" step="0.01" inputmode="decimal" value="'+esc(nt.nwid||'')+'"></div>'
+    + '</div></div></div>';
+}
+function renderBuildings(p){
+  var list = p.buildings || [];
+  $('bldList').innerHTML = list.map(bldCardHTML).join('');
+  wireBldCards();
+}
+function wireBldCards(){
+  $('bldList').querySelectorAll('.bld-card').forEach(function(card){
+    var delBtn = card.querySelector('.bld-delBtn');
+    var armed = false, timer = null;
+    delBtn.onclick = function(){
+      if(!armed){
+        armed = true; delBtn.textContent = '确认删除？';
+        timer = setTimeout(function(){ armed = false; delBtn.textContent = '删除'; }, 3000);
+        return;
+      }
+      clearTimeout(timer);
+      card.remove();
+      updateDerived(collectForm());
+    };
+    var nchk = card.querySelector('[data-f="notchOn"]');
+    nchk.onchange = function(){
+      var nf = card.querySelector('.notch-fields');
+      if(nf) nf.classList.toggle('hidden', !nchk.checked);
+    };
+  });
+}
+function collectBuildings(){
+  var out = [];
+  $('bldList').querySelectorAll('.bld-card').forEach(function(card){
+    function v(f){ var el = card.querySelector('[data-f="'+f+'"]'); return el ? el.value : ''; }
+    var notchOn = card.querySelector('[data-f="notchOn"]');
+    var b = {
+      id: card.getAttribute('data-bid') || uid(),
+      name: v('name'), side: v('side') || '北',
+      len: v('len'), wid: v('wid'), hgt: v('hgt'),
+      prow: v('prow'), pper: v('pper'), notch: null
+    };
+    if(notchOn && notchOn.checked){
+      b.notch = { corner: v('corner') || '东北', nlen: v('nlen'), nwid: v('nwid') };
+    }
+    out.push(b);
+  });
+  return out;
+}
+function addBuilding(){
+  var b = {id:uid(), name:'', side:'北', len:'', wid:'', hgt:'', prow:'', pper:'', notch:null};
+  var tmp = document.createElement('div');
+  tmp.innerHTML = bldCardHTML(b);
+  $('bldList').appendChild(tmp.firstChild);
+  wireBldCards();
+  updateDerived(collectForm());
+  var nm = $('bldList').lastChild.querySelector('[data-f="name"]');
+  if(nm) nm.focus();
 }
 function updateDerived(p){
   var c = counts(p);
@@ -411,6 +539,7 @@ function openEditor(id){
   delArmed = false; $('delBtn').textContent = '删除';
   var p = projects.find(function(x){ return x.id===id; });
   if(!p){ p = blankProject(); curId = p.id; }
+  migrate(p);
   fillForm(p);
   $('listView').classList.add('hidden');
   $('editView').classList.remove('hidden');
@@ -465,30 +594,158 @@ function buildPlanSVG(p){
   s += '<text x="40" y="32" font-size="20" font-weight="bold" fill="#1e3a5f">'+esc(p.name||'（未填户主）')+' · 光伏草勘平面图</text>';
   s += '<text x="40" y="56" font-size="12" fill="#667085">'+esc(trunc(p.addr||'地址未填', 26))+'　|　'+c.total+'块 · '+c.kw.toFixed(2)+'kW · '+esc(p.mode||'')+' · '+esc(p.status||'')+'</text>';
   s += '<line x1="40" y1="68" x2="760" y2="68" stroke="#d7dee8" stroke-width="1"/>';
-  /* 场地边界 + 虚线范围 */
-  s += '<rect x="40" y="90" width="480" height="460" fill="#fbfcfe" stroke="#1e3a5f" stroke-width="2.5"/>';
-  s += '<rect x="58" y="108" width="444" height="424" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="6 4"/>';
-  /* 指北针（画在边界之后，避免被底色盖住） */
-  s += '<g><circle cx="492" cy="112" r="15" fill="#fff" stroke="#1e3a5f" stroke-width="1.5"/>'
-    + '<polygon points="492,100 497,118 492,114 487,118" fill="#1e3a5f"/>'
-    + '<text x="492" y="142" font-size="12" font-weight="bold" fill="#1e3a5f" text-anchor="middle">北</text></g>';
-  /* 主房（西）+ 老房屋顶组件 */
-  s += '<rect x="70" y="130" width="110" height="300" fill="#e8eef5" stroke="#1e3a5f" stroke-width="1.5"/>';
-  s += panelGrid(76, 136, 98, 262, p.rrow, p.rper);
-  s += '<text x="125" y="418" font-size="13" fill="#1e3a5f" text-anchor="middle">主房（老房）</text>';
-  /* 南房 */
-  s += '<rect x="70" y="440" width="360" height="90" fill="#e8eef5" stroke="#1e3a5f" stroke-width="1.5"/>';
-  s += '<text x="250" y="490" font-size="13" fill="#1e3a5f" text-anchor="middle">南房</text>';
-  /* 院子 + 院子组件 */
-  s += '<text x="350" y="126" font-size="13" fill="#1e3a5f" text-anchor="middle">院子</text>';
-  s += panelGrid(205, 140, 290, 275, p.ycol, p.yrow);
+  /* ---- 场地：按南北总长 × 东西总长等比例 ---- */
+  function dimM(v){ var n = num(v); return (n!=null && n>0) ? n : null; }
+  function fmtN(n){ return (Math.round(n*10)/10).toString(); }
+  var AX0 = 40, AY0 = 90, AMW = 480, AMH = 460;
+  var siteNS = dimM(p.ns), siteEW = dimM(p.ew);
+  var scale = 38, cand = [];
+  if(siteEW) cand.push(AMW / siteEW);
+  if(siteNS) cand.push(AMH / siteNS);
+  if(cand.length) scale = Math.min.apply(null, cand);
+  var siteW = siteEW ? siteEW * scale : AMW;
+  var siteH = siteNS ? siteNS * scale : AMH;
+  siteW = Math.max(120, Math.min(siteW, AMW));
+  siteH = Math.max(100, Math.min(siteH, AMH));
+  var siteX = AX0 + (AMW - siteW) / 2;
+  var siteY = AY0 + (AMH - siteH) / 2;
+  s += '<rect x="'+fmtN(siteX)+'" y="'+fmtN(siteY)+'" width="'+fmtN(siteW)+'" height="'+fmtN(siteH)+'" fill="#fbfcfe" stroke="#1e3a5f" stroke-width="2.5"/>';
+  var ix = siteX + 18, iy = siteY + 18, iw = siteW - 36, ih = siteH - 36;
+  if(iw > 20 && ih > 20){
+    s += '<rect x="'+fmtN(ix)+'" y="'+fmtN(iy)+'" width="'+fmtN(iw)+'" height="'+fmtN(ih)+'" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="6 4"/>';
+  }
+  /* ---- 房屋：按方位摆在对应边上，长宽按同一比例 ---- */
+  function sideOf(b){ return (b.side==='南'||b.side==='东'||b.side==='西') ? b.side : '北'; }
+  var M = 8;
+  var bx0 = siteX + M, by0 = siteY + M, bw = siteW - 2*M, bh = siteH - 2*M;
+  var groups = {'北':[], '南':[], '东':[], '西':[]};
+  (p.buildings||[]).forEach(function(b){ groups[sideOf(b)].push(b); });
+  function bldSize(b){
+    var L = dimM(b.len), Wd = dimM(b.wid);
+    var pw = Wd!=null ? Wd*scale : 90;
+    var ph = L!=null ? L*scale : 70;
+    pw = Math.max(20, Math.min(pw, bw));
+    ph = Math.max(16, Math.min(ph, bh));
+    return { pw:pw, ph:ph, sized:(L!=null && Wd!=null) };
+  }
+  var placed = [];
+  var GAP = 6;
+  function placeRow(list, top){
+    var cur = bx0;
+    var maxH = 0;
+    list.forEach(function(b){
+      var sz = bldSize(b);
+      var w = Math.min(sz.pw, bx0 + bw - cur);
+      if(w < 20) w = 20;
+      var x = Math.min(cur, bx0 + bw - w);
+      var y = top ? by0 : by0 + bh - sz.ph;
+      placed.push({b:b, x:x, y:y, w:w, h:sz.ph, sized:sz.sized});
+      if(sz.ph > maxH) maxH = sz.ph;
+      cur = x + w + GAP;
+    });
+    return maxH;
+  }
+  function placeCol(list, left, yTop, yBot){
+    var cur = yTop;
+    list.forEach(function(b){
+      var sz = bldSize(b);
+      var h = Math.min(sz.ph, yBot - cur);
+      if(h < 16) h = 16;
+      var y = Math.min(cur, yBot - h);
+      if(y < yTop) y = yTop;
+      var x = left ? bx0 : bx0 + bw - sz.pw;
+      placed.push({b:b, x:x, y:y, w:sz.pw, h:h, sized:sz.sized});
+      cur = y + h + GAP;
+    });
+  }
+  /* 北/南先占整条边（含墙角），东/西只排中间一段，避免墙角重叠 */
+  var topUsed = placeRow(groups['北'], true);
+  var botUsed = placeRow(groups['南'], false);
+  var spanTop = by0 + (topUsed > 0 ? topUsed + GAP : 0);
+  var spanBot = by0 + bh - (botUsed > 0 ? botUsed + GAP : 0);
+  if(spanBot - spanTop < 20){ spanTop = by0; spanBot = by0 + bh; }
+  placeCol(groups['西'], true, spanTop, spanBot);
+  placeCol(groups['东'], false, spanTop, spanBot);
+  placed.forEach(function(pl, idx){
+    var b = pl.b;
+    var nt = b.notch || {};
+    var cn = nt.corner;
+    var nl = dimM(nt.nlen), nw = dimM(nt.nwid);
+    var pts = null;
+    if(cn && nl!=null && nw!=null){
+      var nx = Math.min(nw*scale, pl.w*0.8);
+      var ny = Math.min(nl*scale, pl.h*0.8);
+      var x = pl.x, y = pl.y, w = pl.w, h = pl.h;
+      if(cn==='东北') pts = [[x,y],[x+w-nx,y],[x+w-nx,y+ny],[x+w,y+ny],[x+w,y+h],[x,y+h]];
+      else if(cn==='东南') pts = [[x,y],[x+w,y],[x+w,y+h-ny],[x+w-nx,y+h-ny],[x+w-nx,y+h],[x,y+h]];
+      else if(cn==='西北') pts = [[x+nx,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y+ny],[x+nx,y+ny]];
+      else if(cn==='西南') pts = [[x,y],[x+w,y],[x+w,y+h],[x+nx,y+h],[x+nx,y+h-ny],[x,y+h-ny]];
+    }
+    var dash = pl.sized ? '' : ' stroke-dasharray="5 3"';
+    var clipId = 'bclip' + idx;
+    var pp = null;
+    if(pts){
+      pp = pts.map(function(q){ return fmtN(q[0])+','+fmtN(q[1]); }).join(' ');
+      s += '<polygon points="'+pp+'" fill="#e8eef5" stroke="#1e3a5f" stroke-width="1.5"'+dash+'/>';
+    } else {
+      s += '<rect x="'+fmtN(pl.x)+'" y="'+fmtN(pl.y)+'" width="'+fmtN(pl.w)+'" height="'+fmtN(pl.h)+'" fill="#e8eef5" stroke="#1e3a5f" stroke-width="1.5"'+dash+'/>';
+    }
+    var pc = int0(b.prow), pp2 = int0(b.pper);
+    if(pc && pp2){
+      if(pts) s += '<clipPath id="'+clipId+'"><polygon points="'+pp+'"/></clipPath>';
+      else s += '<clipPath id="'+clipId+'"><rect x="'+fmtN(pl.x)+'" y="'+fmtN(pl.y)+'" width="'+fmtN(pl.w)+'" height="'+fmtN(pl.h)+'"/></clipPath>';
+      var cols = (pl.w >= pl.h) ? pp2 : pc;
+      var rows = (pl.w >= pl.h) ? pc : pp2;
+      s += '<g clip-path="url(#'+clipId+')">' + panelGrid(pl.x+4, pl.y+4, pl.w-8, pl.h-8, cols, rows) + '</g>';
+    }
+    var nm = (b.name || '房屋') + (pl.sized ? '' : '（尺寸未填）');
+    var dims = '';
+    if(dimM(b.len)!=null && dimM(b.wid)!=null) dims = dimM(b.len) + '×' + dimM(b.wid) + '米';
+    else if(dimM(b.hgt)!=null) dims = '高' + dimM(b.hgt) + '米';
+    var tcx = pl.x + pl.w/2;
+    var halo = ' stroke="#ffffff" stroke-width="3" paint-order="stroke"';
+    if(pl.h >= 52 && dims){
+      s += '<text x="'+fmtN(tcx)+'" y="'+fmtN(pl.y + pl.h/2 - 2)+'" font-size="12.5" fill="#1e3a5f" text-anchor="middle"'+halo+'>'+esc(trunc(nm, 10))+'</text>';
+      s += '<text x="'+fmtN(tcx)+'" y="'+fmtN(pl.y + pl.h/2 + 15)+'" font-size="10.5" fill="#475569" text-anchor="middle"'+halo+'>'+esc(dims)+'</text>';
+    } else if(pl.h >= 26){
+      s += '<text x="'+fmtN(tcx)+'" y="'+fmtN(pl.y + pl.h/2 + 4)+'" font-size="12.5" fill="#1e3a5f" text-anchor="middle"'+halo+'>'+esc(trunc(nm, 10))+'</text>';
+    } else {
+      var ly = pl.y + pl.h + 13;
+      if(ly > siteY + siteH - 2) ly = pl.y - 6;
+      s += '<text x="'+fmtN(tcx)+'" y="'+fmtN(ly)+'" font-size="11" fill="#1e3a5f" text-anchor="middle"'+halo+'>'+esc(trunc(nm, 10))+'</text>';
+    }
+  });
+  /* ---- 院子：房屋占完剩下的空间 ---- */
+  var topUsed = 0, botUsed = 0, leftUsed = 0, rightUsed = 0;
+  placed.forEach(function(pl){
+    var sd = sideOf(pl.b);
+    if(sd==='北') topUsed = Math.max(topUsed, pl.y + pl.h - by0);
+    else if(sd==='南') botUsed = Math.max(botUsed, by0 + bh - pl.y);
+    else if(sd==='西') leftUsed = Math.max(leftUsed, pl.x + pl.w - bx0);
+    else rightUsed = Math.max(rightUsed, bx0 + bw - pl.x);
+  });
+  var yx = bx0 + leftUsed, yy = by0 + topUsed;
+  var yw = bw - leftUsed - rightUsed, yh = bh - topUsed - botUsed;
+  if(yw < 40 || yh < 40){ yx = bx0; yy = by0; yw = bw; yh = bh; }
+  s += '<text x="'+fmtN(yx + yw/2)+'" y="'+fmtN(yy + 16)+'" font-size="13" fill="#1e3a5f" text-anchor="middle">院子</text>';
+  s += panelGrid(yx + 4, yy + 22, yw - 8, yh - 26, p.ycol, p.yrow);
+  /* 指北针（北朝上，放在场地右上角） */
+  var ncx = siteX + siteW - 26, ncy = siteY + 26;
+  s += '<g><circle cx="'+fmtN(ncx)+'" cy="'+fmtN(ncy)+'" r="15" fill="#fff" stroke="#1e3a5f" stroke-width="1.5"/>'
+    + '<polygon points="'+fmtN(ncx)+','+fmtN(ncy-12)+' '+fmtN(ncx+5)+','+fmtN(ncy+6)+' '+fmtN(ncx)+','+fmtN(ncy+2)+' '+fmtN(ncx-5)+','+fmtN(ncy+6)+'" fill="#1e3a5f"/>'
+    + '<text x="'+fmtN(ncx)+'" y="'+fmtN(ncy+30)+'" font-size="12" font-weight="bold" fill="#1e3a5f" text-anchor="middle">北</text></g>';
   /* 尺寸标注 */
-  s += '<text x="24" y="320" font-size="12" fill="#1e3a5f" transform="rotate(-90 24 320)" text-anchor="middle">南北总长 '+fmt(p.ns)+'米</text>';
-  s += '<text x="180" y="82" font-size="11" fill="#475569">北过墙高 '+fmt(p.nwall)+'米 · 北高 '+fmt(p.nhigh)+'米</text>';
-  s += '<text x="508" y="300" font-size="11" fill="#475569" transform="rotate(-90 508 300)" text-anchor="middle">过道 '+fmt(p.pass)+'米</text>';
-  s += '<text x="184" y="210" font-size="10" fill="#475569">'+fmt(p.me1)+'米</text>';
-  s += '<text x="184" y="340" font-size="10" fill="#475569">'+fmt(p.me2)+'米</text>';
-  s += '<text x="40" y="568" font-size="11" fill="#475569">南房：东北角 '+fmt(p.sne)+'米 · 西墙 '+fmt(p.sw1)+'米 / '+fmt(p.sw2)+'米 · 东侧 '+fmt(p.se)+'米</text>';
+  s += '<text x="'+fmtN(siteX-14)+'" y="'+fmtN(siteY+siteH/2)+'" font-size="12" fill="#1e3a5f" transform="rotate(-90 '+fmtN(siteX-14)+' '+fmtN(siteY+siteH/2)+')" text-anchor="middle">南北总长 '+fmt(p.ns)+'米</text>';
+  s += '<text x="'+fmtN(siteX)+'" y="'+fmtN(siteY-8)+'" font-size="11" fill="#475569">北过墙高 '+fmt(p.nwall)+'米 · 北高 '+fmt(p.nhigh)+'米</text>';
+  s += '<text x="'+fmtN(siteX+siteW+14)+'" y="'+fmtN(siteY+siteH/2)+'" font-size="11" fill="#475569" transform="rotate(-90 '+fmtN(siteX+siteW+14)+' '+fmtN(siteY+siteH/2)+')" text-anchor="middle">过道 '+fmt(p.pass)+'米</text>';
+  var legacy = [];
+  if(hasVal(p.me1)||hasVal(p.me2)) legacy.push('主房东墙 '+fmt(p.me1)+'米 / '+fmt(p.me2)+'米');
+  if(hasVal(p.mn)) legacy.push('主房北端 '+fmt(p.mn)+'米');
+  if(hasVal(p.ms)) legacy.push('主房南端距南房 '+fmt(p.ms)+'米');
+  if(hasVal(p.sne)||hasVal(p.sw1)||hasVal(p.sw2)||hasVal(p.se)) legacy.push('南房：东北角 '+fmt(p.sne)+'米 · 西墙 '+fmt(p.sw1)+'米 / '+fmt(p.sw2)+'米 · 东侧 '+fmt(p.se)+'米');
+  if(legacy.length){
+    s += '<text x="40" y="'+fmtN(siteY+siteH+18)+'" font-size="11" fill="#475569">'+esc(trunc(legacy.join('　'), 46))+'</text>';
+  }
   /* 右侧信息栏 */
   var x = 545, w = 215, y = 90;
   function box(title, lines){
@@ -496,7 +753,7 @@ function buildPlanSVG(p){
     var o = '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#ffffff" stroke="#d7dee8" stroke-width="1" rx="6"/>';
     o += '<text x="'+(x+12)+'" y="'+(y+21)+'" font-size="13" font-weight="bold" fill="#1e3a5f">'+title+'</text>';
     lines.forEach(function(L, i){
-      o += '<text x="'+(x+12)+'" y="'+(y+43+i*19)+'" font-size="11.5" fill="#333"><tspan fill="#667085">'+L[0]+'</tspan>'+esc(L[1])+'</text>';
+      o += '<text x="'+(x+12)+'" y="'+(y+43+i*19)+'" font-size="11.5" fill="#333"><tspan fill="#667085">'+esc(L[0])+'</tspan>'+esc(L[1])+'</text>';
     });
     y += h + 10;
     return o;
@@ -509,13 +766,20 @@ function buildPlanSVG(p){
     ['状态：', p.status||'草勘中'],
     ['上网模式：', p.mode||'']
   ]);
-  s += box('组件布置', [
-    ['院子：', (int0(p.ycol)||'—')+' × '+(int0(p.yrow)||'—')+' = '+c.yard+'块'],
-    ['老房屋顶：', (int0(p.rrow)||'—')+'排 × '+(int0(p.rper)||'—')+' = '+c.roof+'块'],
-    ['组件功率：', (num(p.watt)==null?'未填':num(p.watt)+'W')],
-    ['共计：', c.total+'块'],
-    ['装机容量：', c.kw.toFixed(2)+' kW']
-  ]);
+  var compLines = [];
+  (p.buildings||[]).forEach(function(b){
+    var n = int0(b.prow)*int0(b.pper);
+    compLines.push([trunc(b.name||'房屋', 8)+'：', (int0(b.prow)||'—')+'排 × '+(int0(b.pper)||'—')+' = '+n+'块']);
+  });
+  if(compLines.length > 5){
+    compLines = compLines.slice(0, 5);
+    compLines.push(['其余房屋：', '另'+(p.buildings.length-5)+'栋（见平面图）']);
+  }
+  compLines.push(['院子：', (int0(p.ycol)||'—')+' × '+(int0(p.yrow)||'—')+' = '+c.yard+'块']);
+  compLines.push(['组件功率：', (num(p.watt)==null?'未填':num(p.watt)+'W')]);
+  compLines.push(['共计：', c.total+'块']);
+  compLines.push(['装机容量：', c.kw.toFixed(2)+' kW']);
+  s += box('组件布置', compLines);
   s += box('尺寸汇总', [
     ['南北总长：', fmt(p.ns)+'米'],
     ['东西总长：', fmt(p.ew)+'米'],
@@ -535,12 +799,11 @@ function buildPlanSVG(p){
   s += '<rect x="'+(x+110)+'" y="'+(y+12)+'" width="12" height="10" fill="none" stroke="#94a3b8" stroke-dasharray="3 2"/>';
   s += '<text x="'+(x+128)+'" y="'+(y+21)+'" font-size="11.5" fill="#333">虚线范围</text>';
   /* 页脚 */
-  s += '<text x="40" y="648" font-size="11" fill="#94a3b8">本图根据现场手绘草图整理，不按比例；尺寸以草图标注为准，正式备案前请复核。</text>';
-  s += '<text x="40" y="666" font-size="11" fill="#94a3b8">示意比例 · 整理日期：'+esc(p.date||todayStr())+' · 光伏草勘备案助手</text>';
+  s += '<text x="40" y="648" font-size="11" fill="#94a3b8">按比例示意 · 尺寸以实测标注为准，正式备案前请复核。</text>';
+  s += '<text x="40" y="666" font-size="11" fill="#94a3b8">整理日期：'+esc(p.date||todayStr())+' · 光伏草勘备案助手</text>';
   s += '</svg>';
   return s;
 }
-
 /* ============ PNG / 打印 ============ */
 function exportPNG(){
   var svgEl = $('planBox').querySelector('svg');
@@ -593,7 +856,7 @@ function importBackup(file){
       var ok = arr.filter(function(x){ return x && typeof x==='object' && x.name; });
       if(!ok.length){ toast('文件里没有可用项目'); return; }
       if(!confirm('导入 '+ok.length+' 个项目？将与现有项目合并。')) return;
-      ok.forEach(function(x){ x.id = uid(); projects.push(x); });
+      ok.forEach(function(x){ x.id = uid(); migrate(x); projects.push(x); });
       storeSave(); renderList();
       toast('已导入 '+ok.length+' 个项目 ✓');
     }catch(e){ toast('导入失败：文件格式不对'); }
@@ -610,6 +873,7 @@ function init(){
   renderChips(); renderList();
   $('searchBox').addEventListener('input', renderList);
   $('newBtn').onclick = function(){ openEditor(null); };
+  $('addBldBtn').onclick = addBuilding;
   $('backBtn').onclick = backToList;
   $('saveBtn').onclick = function(){ if(saveCurrent()) backToList(); };
   $('copyBtn').onclick = function(){
