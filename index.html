@@ -422,10 +422,6 @@ function bldCardHTML(b){
     + '<div class="field"><label>宽（东西向，米）</label><input type="number" data-f="wid" step="0.01" inputmode="decimal" value="'+esc(b.wid||'')+'"></div>'
     + '<div class="field"><label>高（米）</label><input type="number" data-f="hgt" step="0.01" inputmode="decimal" value="'+esc(b.hgt||'')+'"></div>'
     + '</div>'
-    + '<div class="row">'
-    + '<div class="field"><label>屋顶排数</label><input type="number" data-f="prow" step="1" min="0" inputmode="numeric" value="'+esc(b.prow||'')+'"></div>'
-    + '<div class="field"><label>每排块数</label><input type="number" data-f="pper" step="1" min="0" inputmode="numeric" value="'+esc(b.pper||'')+'"></div>'
-    + '</div>'
     + '<div class="check-item"><input type="checkbox" data-f="notchOn"'+(notchOn?' checked':'')+'><span>有缺角</span></div>'
     + '<div class="notch-fields'+(notchOn?'':' hidden')+'">'
     + '<div class="row">'
@@ -462,14 +458,20 @@ function wireBldCards(){
 }
 function collectBuildings(){
   var out = [];
+  /* 屋顶排数/每排块数已从表单去掉（板子尺寸未定，暂不测算）；存量值按房屋 id 保留，保存时不丢失 */
+  var base = projects.find(function(x){ return x.id===curId; });
+  var kept = {};
+  (base && base.buildings ? base.buildings : []).forEach(function(bd){ kept[bd.id] = bd; });
   $('bldList').querySelectorAll('.bld-card').forEach(function(card){
     function v(f){ var el = card.querySelector('[data-f="'+f+'"]'); return el ? el.value : ''; }
     var notchOn = card.querySelector('[data-f="notchOn"]');
+    var bid = card.getAttribute('data-bid') || uid();
+    var old = kept[bid] || {};
     var b = {
-      id: card.getAttribute('data-bid') || uid(),
+      id: bid,
       name: v('name'), side: v('side') || '北',
       len: v('len'), wid: v('wid'), hgt: v('hgt'),
-      prow: v('prow'), pper: v('pper'), notch: null
+      prow: old.prow || '', pper: old.pper || '', notch: null
     };
     if(notchOn && notchOn.checked){
       b.notch = { corner: v('corner') || '东北', nlen: v('nlen'), nwid: v('nwid') };
@@ -741,7 +743,7 @@ function buildPlanSVG(p){
   var compLines = [];
   (p.buildings||[]).forEach(function(b){
     var n = int0(b.prow)*int0(b.pper);
-    compLines.push([trunc(b.name||'房屋', 8)+'：', (int0(b.prow)||'—')+'排 × '+(int0(b.pper)||'—')+' = '+n+'块']);
+    if(n > 0) compLines.push([trunc(b.name||'房屋', 8)+'：', (int0(b.prow)||'—')+'排 × '+(int0(b.pper)||'—')+' = '+n+'块']);
   });
   if(compLines.length > 5){
     compLines = compLines.slice(0, 5);
