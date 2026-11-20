@@ -146,33 +146,6 @@ textarea{resize:vertical;min-height:64px}
         <div class="field"><label>南北总长</label><input id="f_ns" type="number" step="0.01" inputmode="decimal" placeholder="如 11.5"></div>
         <div class="field"><label>东西总长</label><input id="f_ew" type="number" step="0.01" inputmode="decimal"></div>
       </div>
-      <div class="row">
-        <div class="field"><label>北过墙高</label><input id="f_nwall" type="number" step="0.01" inputmode="decimal"></div>
-        <div class="field"><label>北高</label><input id="f_nhigh" type="number" step="0.01" inputmode="decimal"></div>
-      </div>
-      <div class="row">
-        <div class="field"><label>东过道宽</label><input id="f_pass" type="number" step="0.01" inputmode="decimal" placeholder="如 1.85"></div>
-        <div class="field"><label>东土墙高</label><input id="f_ewallh" type="number" step="0.01" inputmode="decimal"></div>
-      </div>
-      <div class="field"><label>东土墙厚（米）</label><input id="f_ewallt" type="number" step="0.01" inputmode="decimal" placeholder="如 0.4"></div>
-      <h3>主房（老房）</h3>
-      <div class="row">
-        <div class="field"><label>北端</label><input id="f_mn" type="number" step="0.01" inputmode="decimal"></div>
-        <div class="field"><label>东墙北段</label><input id="f_me1" type="number" step="0.01" inputmode="decimal"></div>
-      </div>
-      <div class="row">
-        <div class="field"><label>东墙南段</label><input id="f_me2" type="number" step="0.01" inputmode="decimal"></div>
-        <div class="field"><label>南端距南房</label><input id="f_ms" type="number" step="0.01" inputmode="decimal"></div>
-      </div>
-      <h3>南房</h3>
-      <div class="row">
-        <div class="field"><label>东北角</label><input id="f_sne" type="number" step="0.01" inputmode="decimal"></div>
-        <div class="field"><label>西墙①</label><input id="f_sw1" type="number" step="0.01" inputmode="decimal"></div>
-      </div>
-      <div class="row">
-        <div class="field"><label>西墙②</label><input id="f_sw2" type="number" step="0.01" inputmode="decimal"></div>
-        <div class="field"><label>东侧</label><input id="f_se" type="number" step="0.01" inputmode="decimal"></div>
-      </div>
     </div>
 
     <div class="card">
@@ -377,12 +350,11 @@ function renderList(){
 }
 
 /* ============ 编辑器 ============ */
-var FIELDS = ['name','phone','date','addr','surveyor','status','ns','ew','nwall','nhigh','pass','ewallh','ewallt','mn','me1','me2','ms','sne','sw1','sw2','se','ycol','yrow','watt','mode','noteText','hours','cost','self','sp','ep'];
-var FID = {name:'f_name',phone:'f_phone',date:'f_date',addr:'f_addr',surveyor:'f_surveyor',status:'f_status',ns:'f_ns',ew:'f_ew',nwall:'f_nwall',nhigh:'f_nhigh',pass:'f_pass',ewallh:'f_ewallh',ewallt:'f_ewallt',mn:'f_mn',me1:'f_me1',me2:'f_me2',ms:'f_ms',sne:'f_sne',sw1:'f_sw1',sw2:'f_sw2',se:'f_se',ycol:'f_ycol',yrow:'f_yrow',watt:'f_watt',mode:'f_mode',noteText:'f_noteText',hours:'f_hours',cost:'f_cost',self:'f_self',sp:'f_sp',ep:'f_ep'};
+var FIELDS = ['name','phone','date','addr','surveyor','status','ns','ew','ycol','yrow','watt','mode','noteText','hours','cost','self','sp','ep'];
+var FID = {name:'f_name',phone:'f_phone',date:'f_date',addr:'f_addr',surveyor:'f_surveyor',status:'f_status',ns:'f_ns',ew:'f_ew',ycol:'f_ycol',yrow:'f_yrow',watt:'f_watt',mode:'f_mode',noteText:'f_noteText',hours:'f_hours',cost:'f_cost',self:'f_self',sp:'f_sp',ep:'f_ep'};
 function blankProject(){
   return { id:uid(), name:'', phone:'', addr:'', date:todayStr(), surveyor:'', status:'草勘中',
-    ns:'', ew:'', nwall:'', nhigh:'', pass:'', ewallh:'', ewallt:'',
-    mn:'', me1:'', me2:'', ms:'', sne:'', sw1:'', sw2:'', se:'',
+    ns:'', ew:'',
     ycol:'', yrow:'', watt:'585', mode:'自发自用余电上网',
     note1:false, note2:false, noteText:'',
     checklist:[false,false,false,false,false,false,false,false,false],
@@ -736,8 +708,8 @@ function buildPlanSVG(p){
     + '<text x="'+fmtN(ncx)+'" y="'+fmtN(ncy+30)+'" font-size="12" font-weight="bold" fill="#1e3a5f" text-anchor="middle">北</text></g>';
   /* 尺寸标注 */
   s += '<text x="'+fmtN(siteX-14)+'" y="'+fmtN(siteY+siteH/2)+'" font-size="12" fill="#1e3a5f" transform="rotate(-90 '+fmtN(siteX-14)+' '+fmtN(siteY+siteH/2)+')" text-anchor="middle">南北总长 '+fmt(p.ns)+'</text>';
-  s += '<text x="'+fmtN(siteX)+'" y="'+fmtN(siteY-8)+'" font-size="11" fill="#475569">北过墙高 '+fmt(p.nwall)+' · 北高 '+fmt(p.nhigh)+'</text>';
-  s += '<text x="'+fmtN(siteX+siteW+14)+'" y="'+fmtN(siteY+siteH/2)+'" font-size="11" fill="#475569" transform="rotate(-90 '+fmtN(siteX+siteW+14)+' '+fmtN(siteY+siteH/2)+')" text-anchor="middle">过道 '+fmt(p.pass)+'</text>';
+  if(hasVal(p.nwall)||hasVal(p.nhigh)) s += '<text x="'+fmtN(siteX)+'" y="'+fmtN(siteY-8)+'" font-size="11" fill="#475569">北过墙高 '+fmt(p.nwall)+' · 北高 '+fmt(p.nhigh)+'</text>';
+  if(hasVal(p.pass)) s += '<text x="'+fmtN(siteX+siteW+14)+'" y="'+fmtN(siteY+siteH/2)+'" font-size="11" fill="#475569" transform="rotate(-90 '+fmtN(siteX+siteW+14)+' '+fmtN(siteY+siteH/2)+')" text-anchor="middle">过道 '+fmt(p.pass)+'</text>';
   var legacy = [];
   if(hasVal(p.me1)||hasVal(p.me2)) legacy.push('主房东墙 '+fmt(p.me1)+' / '+fmt(p.me2)+'');
   if(hasVal(p.mn)) legacy.push('主房北端 '+fmt(p.mn)+'');
@@ -780,13 +752,14 @@ function buildPlanSVG(p){
   compLines.push(['共计：', c.total+'块']);
   compLines.push(['装机容量：', c.kw.toFixed(2)+' kW']);
   s += box('组件布置', compLines);
-  s += box('尺寸汇总', [
-    ['南北总长：', fmt(p.ns)+''],
-    ['东西总长：', fmt(p.ew)+''],
-    ['北过墙高：', fmt(p.nwall)+''],
-    ['东过道：', fmt(p.pass)+''],
-    ['东土墙：', '高'+fmt(p.ewallh)+' / 厚'+fmt(p.ewallt)+'']
-  ]);
+  var dimLines = [
+    ['南北总长：', fmt(p.ns)],
+    ['东西总长：', fmt(p.ew)]
+  ];
+  if(hasVal(p.nwall)) dimLines.push(['北过墙高：', fmt(p.nwall)]);
+  if(hasVal(p.pass)) dimLines.push(['东过道：', fmt(p.pass)]);
+  if(hasVal(p.ewallh)||hasVal(p.ewallt)) dimLines.push(['东土墙：', '高'+fmt(p.ewallh)+' / 厚'+fmt(p.ewallt)]);
+  s += box('尺寸汇总', dimLines);
   var notes = [];
   if(p.note1) notes.push(['✓ ', '热水器、烟囱可移动']);
   if(p.note2) notes.push(['✓ ', '四周无遮挡']);
